@@ -1,0 +1,41 @@
+1. Violação do SRP (Single Responsibility Principle)
+Classe: GerenciadorBiblioteca
+Métodos: AdicionarUsuario, RealizarEmprestimo, RealizarDevolucao
+
+Problema: A classe GerenciadorBiblioteca tem múltiplas responsabilidades:
+
+Gerencia livros, usuários e empréstimos
+
+Envia e-mails e SMS
+
+Calcula multas
+
+Por que é ruim: Quando uma classe tem várias responsabilidades, qualquer mudança em uma delas pode impactar negativamente as outras. Isso torna o sistema difícil de manter e testar.
+
+ 2. Violação do OCP (Open/Closed Principle)
+Classe: GerenciadorBiblioteca
+Método: EnviarEmail, EnviarSMS
+
+Problema: A lógica de notificação está codificada diretamente na classe. Se precisarmos adicionar uma nova forma de notificação (ex: push notification), temos que modificar a classe.
+
+Por que é ruim: O código deveria estar aberto para extensão, mas fechado para modificação. Idealmente, deveríamos poder adicionar notificações sem alterar GerenciadorBiblioteca.
+
+ 3. Violação do DIP (Dependency Inversion Principle)
+Classe: GerenciadorBiblioteca
+Método: EnviarEmail, EnviarSMS
+
+Problema: A classe depende diretamente de detalhes de implementação (console para simular envio).
+
+Por que é ruim: Isso dificulta a substituição por outros mecanismos (ex: envio real de e-mails). A classe deveria depender de abstrações (interfaces), não de implementações concretas.
+
+ 4. Violação de Clean Code – Métodos longos e multifuncionais
+Método: RealizarEmprestimo, RealizarDevolucao
+
+Problema: Esses métodos fazem várias coisas: busca dados, altera estado, envia notificações, calcula multa.
+
+Por que é ruim: Viola a ideia de "funções que fazem uma única coisa". Isso prejudica a legibilidade e dificulta testes unitários.
+
+ 5. Violação do ISP (Interface Segregation Principle)
+Problema Geral: Não há interfaces no sistema. Uma futura interface para notificações teria que englobar todos os tipos (email, SMS, etc), mesmo que uma classe só precise de um tipo.
+
+Por que é ruim: Isso força as classes a depender de métodos que não usam. É melhor criar interfaces pequenas e específicas.
