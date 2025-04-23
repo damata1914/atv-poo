@@ -1,0 +1,152 @@
+using System;
+using System.Collections.Generic;
+
+// Interface para notificações
+public interface INotificador
+{
+    void Notificar(string destinatario, string assunto, string mensagem);
+}
+
+// Classe concreta de notificação por email
+public class NotificadorEmail : INotificador
+{
+    public void Notificar(string destinatario, string assunto, string mensagem)
+    {
+        Console.WriteLine($"E-mail enviado para {destinatario}. Assunto: {assunto}. Mensagem: {mensagem}");
+    }
+}
+
+// Gerenciador de livros
+public class GerenciadorLivros
+{
+    private List<Livro> livros = new List<Livro>();
+
+    public void AdicionarLivro(string titulo, string autor, string isbn)
+    {
+        livros.Add(new Livro { Titulo = titulo, Autor = autor, ISBN = isbn, Disponivel = true });
+        Console.WriteLine($"Livro adicionado: {titulo}");
+    }
+
+    public Livro ObterLivroPorISBN(string isbn)
+    {
+        return livros.Find(l => l.ISBN == isbn);
+    }
+}
+
+// Gerenciador de usuários
+public class GerenciadorUsuarios
+{
+    private List<Usuario> usuarios = new List<Usuario>();
+
+    public void AdicionarUsuario(string nome, int id)
+    {
+        usuarios.Add(new Usuario { Nome = nome, ID = id });
+        Console.WriteLine($"Usuário adicionado: {nome}");
+    }
+
+    public Usuario ObterUsuarioPorId(int id)
+    {
+        return usuarios.Find(u => u.ID == id);
+    }
+}
+
+// Gerenciador de empréstimos
+public class GerenciadorEmprestimos
+{
+    private List<Emprestimo> emprestimos = new List<Emprestimo>();
+    private readonly INotificador notificador;
+
+    public GerenciadorEmprestimos(INotificador notificador)
+    {
+        this.notificador = notificador;
+    }
+
+    public bool RealizarEmprestimo(int usuarioId, string isbn, int diasEmprestimo, GerenciadorLivros gerenciadorLivros, GerenciadorUsuarios gerenciadorUsuarios)
+    {
+        var livro = gerenciadorLivros.ObterLivroPorISBN(isbn);
+        var usuario = gerenciadorUsuarios.ObterUsuarioPorId(usuarioId);
+
+        if (livro != null && usuario != null && livro.Disponivel)
+        {
+            livro.Disponivel = false;
+            emprestimos.Add(new Emprestimo
+            {
+                Livro = livro,
+                Usuario = usuario,
+                DataEmprestimo = DateTime.Now,
+                DataDevolucaoPrevista = DateTime.Now.AddDays(diasEmprestimo)
+            });
+
+            notificador.Notificar(usuario.Nome, "Empréstimo realizado", $"Você pegou emprestado o livro: {livro.Titulo}");
+            return true;
+        }
+
+        return false;
+    }
+
+    public double RealizarDevolucao(string isbn, int usuarioId, GerenciadorLivros gerenciadorLivros)
+    {
+        var emprestimo = emprestimos.Find(e => e.Livro.ISBN == isbn && e.Usuario.ID == usuarioId && e.DataDevolucaoEfetiva == null);
+
+        if (emprestimo != null)
+        {
+            emprestimo.DataDevolucaoEfetiva = DateTime.Now;
+            emprestimo.Livro.Disponivel = true;
+
+            double multa = 0;
+            if (DateTime.Now > emprestimo.DataDevolucaoPrevista)
+            {
+                multa = (DateTime.Now - emprestimo.DataDevolucaoPrevista).Days * 1.0;
+                notificador.Notificar(emprestimo.Usuario.Nome, "Multa por atraso", $"Você tem uma multa de R$ {multa}");
+            }
+
+            return multa;
+        }
+
+        return -1; // Código de erro
+    }
+}
+
+// Classes de domínio
+public class Livro
+{
+    public string Titulo { get; set; }
+    public string Autor { get; set; }
+    public string ISBN { get; set; }
+    public bool Disponivel { get; set; }
+}
+
+public class Usuario
+{
+    public string Nome { get; set; }
+    public int ID { get; set; }
+}
+
+public class Emprestimo
+{
+    public Livro Livro { get; set; }
+    public Usuario Usuario { get; set; }
+    public DateTime DataEmprestimo { get; set; }
+    public DateTime DataDevolucaoPrevista { get; set; }
+    public DateTime? DataDevolucaoEfetiva { get; set; }
+}
+
+// Classe Program para testar
+class Program
+{
+    static void Main(string[] args)
+    {
+        var notificador = new NotificadorEmail();
+        var gerenciadorLivros = new GerenciadorLivros();
+        var gerenciadorUsuarios = new GerenciadorUsuarios();
+        var gerenciadorEmprestimos = new GerenciadorEmprestimos(notificador);
+
+        gerenciadorLivros.AdicionarLivro("Clean Code", "Robert C. Martin", "978-0132350884");
+        gerenciadorUsuarios.AdicionarUsuario("João Silva", 1);
+
+        gerenciadorEmprestimos.RealizarEmprestimo(1, "978-0132350884", 7, gerenciadorLivros, gerenciadorUsuarios);
+        double multa = gerenciadorEmprestimos.RealizarDevolucao("978-0132350884", 1, gerenciadorLivros);
+
+        Console.WriteLine($"Multa por atraso: R$ {multa}");
+    }
+}
